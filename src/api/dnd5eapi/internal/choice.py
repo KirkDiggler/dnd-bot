@@ -21,7 +21,7 @@ class Choice:
                 option_list=OptionSet(self.from_['options']).to_model(),
             )
         else:
-            raise Exception("option_set_type Not implemented")
+            raise Exception(f"{self.from_['option_set_type']} Not implemented")
 
 def _reference_type_to_model(input):
     if input == ReferenceType.PROFICIENCY:

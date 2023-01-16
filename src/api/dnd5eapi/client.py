@@ -104,15 +104,22 @@ class Client:
 
     # Convert equipment_category choices into an array of equipment
     def _load_equipment_category_choices(self, choice) -> Choice:
-        if choice['from']['option_set_type'] == 'equipment_category':
+        print(f"before: {choice}\n")
+        if 'option_type' in choice and choice['option_type'] == 'choice':
+            choice['choice'] = self._load_equipment_category_choices(choice['choice'])
+        elif 'from' in choice and choice['from']['option_set_type'] == 'equipment_category':
             choice['from']['option_set_type'] = 'options_array'
             index = choice['from']['equipment_category']['index']
             equipment_list = self._query(f'equipment-categories/{index}')['equipment']
             options = [{'option_type': 'reference', 'item': {'index': c['index'], 'name': c['name'], 'url': c['url']}} for c in equipment_list]
             choice['from']['options'] = options
-        elif choice['from']['option_set_type'] == 'options_array':
+        elif  'from' in choice and choice['from']['option_set_type'] == 'options_array':
             for option in choice['from']['options']:
                 if option['option_type'] == 'choice':
                     option['choice'] = self._load_equipment_category_choices(option['choice'])
-        
+                elif option['option_type'] ==  'multiple':
+                    for item in option['items']:
+                        item = self._load_equipment_category_choices(item)
+        print(f"after: {choice}\n")
+
         return choice
