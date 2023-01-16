@@ -7,7 +7,7 @@ class TestCharacter(TestCase):
         character = Character("Test Character")
         character.create(
             {
-                "class": "warlock",
+                "class": "fighter",
                 "race": "dwarf",
             }
         )

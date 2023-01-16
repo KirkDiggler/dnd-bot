@@ -16,6 +16,54 @@ intents.message_content = True
 intents.members = True
 intents.reactions = True
 
+class UserVote:
+    def __init__(self, votes_per_user):
+        __slots__ = '_votes_per_user', '_votes', '_user_votes'
+
+        self.votes_per_user = votes_per_user
+        self._user_votes = {}
+        self._votes = {}
+
+    def vote(self, user, vote):
+        if user.id not in self._user_votes:
+            self._user_votes[user.id] = [vote]
+        else:
+            if len(self._user_votes[user.id]) < self.votes_per_user:
+                self._user_votes[user.id].append(vote)
+            else:
+                return False
+
+        if vote not in self._votes:
+            self._votes[vote] = 1
+        else:
+            self._votes[vote] += 1
+
+        return True
+
+    def remove_vote(self, user, vote):
+        if user.id not in self._user_votes[user.id]:
+            return False
+
+        if vote in self._user_votes[user.id]:
+            self._user_votes[user.id].remove(vote)
+        else:
+            return False
+
+        if vote not in self._votes[vote]:
+            return False
+
+        self._votes[vote] -= 1
+        return True
+
+    def get_winners(self):
+        votes = []
+        for _ in range(self.votes_per_user):
+            for key, vote in self._votes.items():
+                if vote == max(self._votes.values()):
+                    votes.append(key)
+                    self._votes[key] = -1
+                    break
+        return votes
 
 class DiscordBot(commands.Bot):
     def __init__(self):
@@ -30,6 +78,7 @@ class DiscordBot(commands.Bot):
         self._events()
         self._commands()
 
+    # mutates input and removes the item selected
     def get_random_char(self, names, races, classes):
         roll = random.randint(0, len(names)-1)
         name = names[roll]
@@ -49,6 +98,17 @@ class DiscordBot(commands.Bot):
         @self.event
         async def on_ready():
             print('Logged on as', self.user)
+
+        @self.event
+        async def on_message(message):
+            if message.author == self.user:
+                return
+
+            responses = ['you know it bro', '💯', 'right back at ya bro', 'this guy gets it']
+            if message.content.startswith('thank\'s ronnie'):
+                await message.channel.send(random.choice(responses))
+
+            await self.process_commands(message)
 
     def _commands(self):
         @self.command()
@@ -80,6 +140,53 @@ class DiscordBot(commands.Bot):
 
             channel = await bot.fetch_channel(ctx.channel.id)
             name_choices = []
+            emoji_index = {
+                '🇦': 0,
+                '🇧': 1,
+                '🇨': 2,
+                '🇩': 3,
+                '🇪': 4,
+                '🇫': 5,
+                '🇬': 6,
+                '🇭': 7,
+                '🇮': 8,
+                '🇯': 9,
+                '🇰': 10,
+                '🇱': 11,
+                '🇲': 12,
+                '🇳': 13,
+                '🇴': 14,
+                '🇵': 15,
+                '🇶': 16,
+                '🇷': 17,
+                '🇸': 18,
+                '🇹': 19,
+                '🇺': 20,
+            }
+
+            emoji_names = [
+                '🇦',
+                '🇧',
+                '🇨',
+                '🇩',
+                '🇪',
+                '🇫',
+                '🇬',
+                '🇭',
+                '🇮',
+                '🇯',
+                '🇰',
+                '🇱',
+                '🇲',
+                '🇳',
+                '🇴',
+                '🇵',
+                '🇶',
+                '🇷',
+                '🇸',
+                '🇹',
+                '🇺',
+            ]
 
             for member in channel.members:
                 if not member.bot:
@@ -91,27 +198,9 @@ class DiscordBot(commands.Bot):
                 choice = self.get_random_char(name_choices, races, classes)
                 choices.append(choice)
 
-                msgData += str(i+1) + ': ' + choice['name'] + ' the ' + choice['race'].name + ' ' + choice['class'].name + '\n'
+                msgData += emoji_names[i] + ': ' + choice['name'] + ' the ' + choice['race'].name + ' ' + choice['class'].name + '\n'
 
-            votes = {
-                '1️⃣': 0,
-                '2️⃣': 0,
-                '3️⃣': 0,
-                '4️⃣': 0
-            }
-            emoji_index = {
-                '1️⃣': 0,
-                '2️⃣': 1,
-                '3️⃣': 2,
-                '4️⃣': 3
-            }
 
-            emoji_names = [
-                '1️⃣',
-                '2️⃣',
-                '3️⃣',
-                '4️⃣'
-            ]
             msgData += '```'
             msg = await ctx.send('Select one of the following characters:\n' + msgData)
             for i in range(4):
@@ -121,31 +210,26 @@ class DiscordBot(commands.Bot):
                 return user == ctx.author and str(reaction.emoji) in emoji_names
 
             selected = {}
-            user_votes = {}
 
             def find_winner(votes):
                 for key, vote in votes.items():
                     if vote == max(votes.values()):
                         return  choices[emoji_index[key]]
 
+            char_votes = UserVote(votes_per_user=1)
             while True:
                 try:
-                    reaction, user = await bot.wait_for('reaction_add', timeout=10.0, check=check)
+                    reaction, user = await bot.wait_for('reaction_add', timeout=5.0, check=check)
                 except asyncio.TimeoutError:
-
-                    selected = find_winner(votes)
-
+                    winners = char_votes.get_winners()
+                    selected = choices[emoji_index[winners[0]]]
                     break
                 else:
-                    if user.name in user_votes:
-                        pervios_vote = user_votes[user.name]
-                        await msg.remove_reaction(user_votes[user.name], user)
-                        votes[pervios_vote] -= 1       
+                    if char_votes.vote(user, reaction.emoji) == False:
+                        char_votes.remove_vote(user, reaction.emoji)
 
-                    user_votes[user.name] = reaction.emoji
-
-                    votes[reaction.emoji] += 1       
-
+                    char_votes.vote(user, reaction.emoji)
+                           
             char = Character(selected['name'])
             char.create({'race': selected['race'].key, 'class': selected['class'].key})
             
@@ -156,21 +240,30 @@ class DiscordBot(commands.Bot):
                 msgData += 'Choose ' + str(choice.choose) + ' from the following:\n'
 
                 for i in range(len(choice.option_list)):
-                    msgData += str(i+1) + ': ' + choice.option_list[i].item.name + '\n'
+                    msgData += emoji_names[i] + ': ' + choice.option_list[i].item.name + '\n'
                 
                 msgData += '```'
-
+                msg = await ctx.send(msgData)
+                for i in range(len(choice.option_list)):
+                    await msg.add_reaction(emoji_names[i])
+                prof_votes = UserVote(votes_per_user=choice.choose)
+                winners = []
                 while True:
                     try:
-                        await ctx.send(msgData)
-                        background = await bot.wait_for('message', timeout=5.0, check=lambda m: m.author == ctx.author)
+                        reaction, user = await bot.wait_for('reaction_add', timeout=10.0, check=check)
                     except asyncio.TimeoutError:
-                        await ctx.send('Coming Soon')
+                        winners = prof_votes.get_winners()
+                        print(winners)
+
                         break
                     else:
-                        
-                        break
+                        if prof_votes.vote(user, reaction.emoji) == False:
+                            prof_votes.remove_vote(user, reaction.emoji)
 
+                        prof_votes.vote(user, reaction.emoji)
+                            
+                for winner in winners:
+                    await ctx.send(f'{choice.option_list[emoji_index[winner]].item.name} chosen')
 
 bot = DiscordBot()
 
