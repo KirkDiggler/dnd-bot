@@ -74,7 +74,12 @@ async def randomchar(ctx):
     classes = client.list_classes()
 
     channel = await bot.fetch_channel(ctx.channel.id)
-    name_choices = [m.name for m in channel.members]
+    name_choices = []
+    blacklisted_names = ['dnd53-bot', 'FredBoatPatron']
+    
+    for member in channel.members:
+        if member.name not in blacklisted_names:
+            name_choices.append(member.name)
 
     choices = []
     msgData = '```'
