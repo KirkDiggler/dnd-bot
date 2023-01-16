@@ -124,4 +124,4 @@ async def randomchar(ctx):
         
         return char
 
-bot.run('MTA2NDM1NDEzMDc3ODQxMTA2OA.Gd2YV2.uJ8Ax9CFd0HHku9lUZSVmiYnhj0hDGNQyuEW1I')
+bot.run('')
