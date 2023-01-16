@@ -1,12 +1,19 @@
+import sys
 import discord, asyncio
 from discord.ext import commands
 import random
 from src.lib.character import Character
 from src.api.dnd5eapi.client import Client
 
+token = sys.argv[1]
+if token is None:
+    print('No token provided')
+    exit(1)
+
 client = Client()
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 bot = commands.Bot(command_prefix='?', intents=intents)
 
 _character = None
@@ -66,14 +73,26 @@ async def randomchar(ctx):
     races = client.list_races()
     classes = client.list_classes()
 
+    channel = await bot.fetch_channel(ctx.channel.id)
+    name_choices = [m.name for m in channel.members]
+
     choices = []
     msgData = '```'
     for i in range(4):
-        race = random.choice(races)
-        klass = random.choice(classes)
-        choices.append({'class': klass, 'race': race})
+        roll = random.randint(0, len(name_choices)-1)
+        name = name_choices[roll]
+        del name_choices[roll:roll+1]
 
-        msgData += str(i+1) + ': Stan the ' + race.name + ' ' + klass.name + '\n'
+        roll = random.randint(0, len(races)-1)
+        race = races[roll]
+        del races[roll:roll+1]
+
+        roll = random.randint(0, len(classes)-1)
+        klass = classes[roll]
+        del classes[roll:roll+1]
+        choices.append({'name': name, 'class': klass, 'race': race})
+
+        msgData += str(i+1) + ': ' + name + ' the ' + race.name + ' ' + klass.name + '\n'
 
     votes = {
         '1️⃣': 0,
@@ -102,6 +121,8 @@ async def randomchar(ctx):
     def check(reaction, user):
         return user == ctx.author and str(reaction.emoji) in emoji_names
 
+
+
     selected = {}
     while True:
         try:
@@ -109,19 +130,16 @@ async def randomchar(ctx):
         except asyncio.TimeoutError:
             for key, vote in votes.items():
                 if vote == max(votes.values()):
-                    generate_char(choices[emoji_index[key]])
+                    selected = choices[emoji_index[key]]
                     break
             break
         else:
             await ctx.send('Vote registered')
-            votes[reaction.emoji] += 1
+            votes[reaction.emoji] += 1       
 
-    async def generate_char(selected):
-        char = Character('Stan')
-        char.create(selected)
+    char = Character('Stan')
+    # char.create({'race': selected['race'].key, 'class': selected['class'].key})
 
-        await ctx.send('This is the tale of Stan the ' + selected['race'].name + ' ' + selected['class'].name + ':\n')
-        
-        return char
+    await ctx.send('This is the tale of ' + selected['name'] + ' the ' + selected['race'].name + ' ' + selected['class'].name + ':\n')
 
-bot.run('')
+bot.run(token)
