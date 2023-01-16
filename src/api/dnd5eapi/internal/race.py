@@ -46,21 +46,29 @@ class Race:
 
     def to_model(self):
         language_options = None
-        if self.language_options:
+        if hasattr(self, 'language_options'):
             language_options = self.language_options.to_model()
-            
+        
+        starting_proficiency_options = None
+        if hasattr(self, 'starting_proficiency_options'):
+            starting_proficiency_options = self.starting_proficiency_options.to_model()
+
+        ability_bonus_options = None
+        if hasattr(self, 'ability_bonus_options'):
+            ability_bonus_options = self.ability_bonus_options.to_model()
+
         return racelib.Race(
             key=self.index,
             name=self.name,
             ability_bonuses=[a.to_model() for a in self.ability_bonuses],
-            ability_bonus_options=[c.to_model() for c in self.ability_bonus_options],
+            ability_bonus_options=ability_bonus_options,
             age=self.age,
             alignment=self.alignment,
             size=self.size,
             speed=self.speed,
             size_description=self.size_description,
             starting_proficiencies=[p.to_model() for p in self.starting_proficiencies],
-            starting_proficiency_options=[c.to_model() for c in self.starting_proficiency_options],
+            starting_proficiency_options=starting_proficiency_options,
             languages=[l.to_model() for l in self.languages],
             language_options = language_options,
             language_desc=self.language_desc,

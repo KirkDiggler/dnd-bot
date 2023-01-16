@@ -124,6 +124,8 @@ async def randomchar(ctx):
         await msg.add_reaction(emoji_names[i])
 
     def check(reaction, user):
+        print(reaction.emoji)
+        print(user.name)
         return user == ctx.author and str(reaction.emoji) in emoji_names
 
     selected = {}
@@ -131,6 +133,8 @@ async def randomchar(ctx):
         try:
             reaction, user = await bot.wait_for('reaction_add', timeout=10.0, check=check)
         except asyncio.TimeoutError:
+            print(votes)
+
             for key, vote in votes.items():
                 if vote == max(votes.values()):
                     selected = choices[emoji_index[key]]
