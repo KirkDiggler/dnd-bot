@@ -18,7 +18,7 @@ class Choice:
         if self.from_['option_set_type'] == 'options_array':
             return choicelib.Choice(
                 choose=self.choose,
-                option_list=self.from_['options'],
+                option_list=OptionSet(self.from_['options']).to_model(),
             )
         else:
             raise Exception("option_set_type Not implemented")
@@ -72,6 +72,18 @@ class ReferenceOption:
             item=self.item.to_model(),
         )
 
+class MultipleReferenceOptions:
+    def __init__(self, *initial_data):
+        self.items = [Option(item) for item in initial_data[0]]
+
+    def __str__(self):
+        return f"{self.__dict__}"
+
+    def to_model(self):
+        return choicelib.MultipleReferenceOptions(
+            items=[item.to_model() for item in self.items],
+        )
+
 class Option:
     def __init__(self, *initial_data):
         for dictionary in initial_data:
@@ -84,6 +96,8 @@ class Option:
                         setattr(self, 'option', ReferenceOption(dictionary['item']))
                     elif dictionary[key] == 'counted_reference':
                         setattr(self, 'option', ReferenceOption(dictionary['of']))
+                    elif dictionary[key] == 'multiple':
+                        setattr(self, 'option', MultipleReferenceOptions(dictionary['items']))
 
     def __str__(self):
         return f"{self.__dict__}"

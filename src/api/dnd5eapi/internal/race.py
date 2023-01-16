@@ -9,11 +9,11 @@ class Race:
     def __init__(self, *initial_data):
         # Set defaults for optional fields
         self.ability_bonuses = []
-        self.ability_bonus_options = []
+        self.ability_bonus_options = None
         self.proficiencies = []
-        self.starting_proficiency_options = []
+        self.starting_proficiency_options = None
         self.languages = []
-        self.language_options = []
+        self.language_options = None
         self.traits = []
         self.subraces = []
         
@@ -46,15 +46,15 @@ class Race:
 
     def to_model(self):
         language_options = None
-        if hasattr(self, 'language_options'):
+        if self.language_options:
             language_options = self.language_options.to_model()
         
         starting_proficiency_options = None
-        if hasattr(self, 'starting_proficiency_options'):
+        if self.starting_proficiency_options:
             starting_proficiency_options = self.starting_proficiency_options.to_model()
 
         ability_bonus_options = None
-        if hasattr(self, 'ability_bonus_options'):
+        if self.ability_bonus_options:
             ability_bonus_options = self.ability_bonus_options.to_model()
 
         return racelib.Race(
