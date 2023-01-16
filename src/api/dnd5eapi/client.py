@@ -104,7 +104,6 @@ class Client:
 
     # Convert equipment_category choices into an array of equipment
     def _load_equipment_category_choices(self, choice) -> Choice:
-        print(f"before: {choice}\n")
         if 'option_type' in choice and choice['option_type'] == 'choice':
             choice['choice'] = self._load_equipment_category_choices(choice['choice'])
         elif 'from' in choice and choice['from']['option_set_type'] == 'equipment_category':
@@ -120,6 +119,5 @@ class Client:
                 elif option['option_type'] ==  'multiple':
                     for item in option['items']:
                         item = self._load_equipment_category_choices(item)
-        print(f"after: {choice}\n")
 
         return choice
