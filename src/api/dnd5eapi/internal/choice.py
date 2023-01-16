@@ -1,4 +1,5 @@
-from src.api.lib import choice, referencelib
+from src.api.lib import choicelib
+from src.api.lib import referencelib
 from .common import ReferenceType, ReferenceItem
 
 class Choice:
@@ -15,9 +16,9 @@ class Choice:
 
     def to_model(self):
         if self.from_['option_set_type'] == 'options_array':
-            return choice.Choice(
+            return choicelib.Choice(
                 choose=self.choose,
-                option_list=OptionSet(self.from_['options']).to_model(),
+                option_list=self.from_['options'],
             )
         else:
             raise Exception("option_set_type Not implemented")
@@ -54,7 +55,7 @@ class OptionSet:
 
 
     def to_model(self):
-        return choice.OptionList(
+        return choicelib.OptionList(
             select_from=[Option(option).to_model() for option in self.options],
         )
 
@@ -66,7 +67,7 @@ class ReferenceOption:
         return f"{self.__dict__}"
 
     def to_model(self):
-        return choice.ReferenceOption(
+        return choicelib.ReferenceOption(
             # TODO: get the type from url and convert to modle ReferenceType
             item=self.item.to_model(),
         )

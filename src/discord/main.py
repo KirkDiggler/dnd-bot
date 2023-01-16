@@ -121,12 +121,10 @@ async def randomchar(ctx):
     def check(reaction, user):
         return user == ctx.author and str(reaction.emoji) in emoji_names
 
-
-
     selected = {}
     while True:
         try:
-            reaction, user = await bot.wait_for('reaction_add', timeout=5.0, check=check)
+            reaction, user = await bot.wait_for('reaction_add', timeout=10.0, check=check)
         except asyncio.TimeoutError:
             for key, vote in votes.items():
                 if vote == max(votes.values()):
@@ -137,9 +135,9 @@ async def randomchar(ctx):
             await ctx.send('Vote registered')
             votes[reaction.emoji] += 1       
 
-    char = Character('Stan')
-    # char.create({'race': selected['race'].key, 'class': selected['class'].key})
+    char = Character(selected['name'])
+    char.create({'race': selected['race'].key, 'class': selected['class'].key})
 
-    await ctx.send('This is the tale of ' + selected['name'] + ' the ' + selected['race'].name + ' ' + selected['class'].name + ':\n')
+    await ctx.send(f"This is the tale of {char}")
 
 bot.run(token)

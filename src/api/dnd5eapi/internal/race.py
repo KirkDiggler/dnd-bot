@@ -4,7 +4,7 @@ from .proficiency import Proficiency
 from .trait import Trait
 
 from src.api.lib import racelib
-
+ 
 class Race:
     def __init__(self, *initial_data):
         # Set defaults for optional fields
@@ -25,7 +25,7 @@ class Race:
                 elif key == "ability_bonus_options":
                     setattr(self, key, Choice(dictionary[key]))
                 elif key == "starting_proficiencies":
-                    setattr(self, key, [Proficiency(p) for p in dictionary[key]])
+                    setattr(self, key, [ReferenceItem(p) for p in dictionary[key]])
                 elif key == "ability_bonus_options":
                     setattr(self, key, Choice(dictionary[key]))
                 elif key == "starting_proficiency_options":
@@ -45,6 +45,10 @@ class Race:
         return self.name
 
     def to_model(self):
+        language_options = None
+        if self.language_options:
+            language_options = self.language_options.to_model()
+            
         return racelib.Race(
             key=self.index,
             name=self.name,
@@ -58,7 +62,7 @@ class Race:
             starting_proficiencies=[p.to_model() for p in self.starting_proficiencies],
             starting_proficiency_options=[c.to_model() for c in self.starting_proficiency_options],
             languages=[l.to_model() for l in self.languages],
-            language_options = [c.to_model() for c in self.language_options],
+            language_options = language_options,
             language_desc=self.language_desc,
             traits=[t.to_model() for t in self.traits], # returns reference item for now
             subraces=[r.to_model() for r in self.subraces]
