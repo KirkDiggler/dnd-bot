@@ -37,15 +37,35 @@ class SpellSlots:
                 setattr(self, key, dictionary[key])
 
     def to_model(self):
+        cantrips = 0
+        if hasattr(self, "cantrips_known"):
+            cantrips = self.cantrips_known
+
+        spell_slots_level_6 = 0
+        if hasattr(self, "spell_slots_level_6"):
+            spell_slots_level_6 = self.spell_slots_level_6
+
+        spell_slots_level_7 = 0
+        if hasattr(self, "spell_slots_level_7"):
+            spell_slots_level_7 = self.spell_slots_level_7
+
+        spell_slots_level_8 = 0
+        if hasattr(self, "spell_slots_level_8"):
+            spell_slots_level_8 = self.spell_slots_level_8
+
+        spell_slots_level_9 = 0
+        if hasattr(self, "spell_slots_level_9"):
+            spell_slots_level_9 = self.spell_slots_level_9
+
         return spell.SpellSlot(
-            cantrips=self.cantrips_known,
+            cantrips=cantrips,
             level_1=self.spell_slots_level_1,
             level_2=self.spell_slots_level_2,
             level_3=self.spell_slots_level_3,
             level_4=self.spell_slots_level_4,
             level_5=self.spell_slots_level_5,
-            level_6=self.spell_slots_level_6,
-            level_7=self.spell_slots_level_7,
-            level_8=self.spell_slots_level_8,
-            level_9=self.spell_slots_level_9
+            level_6=spell_slots_level_6,
+            level_7=spell_slots_level_7,
+            level_8=spell_slots_level_8,
+            level_9=spell_slots_level_9
         )

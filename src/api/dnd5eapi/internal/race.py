@@ -4,16 +4,16 @@ from .proficiency import Proficiency
 from .trait import Trait
 
 from src.api.lib import racelib
-
+ 
 class Race:
     def __init__(self, *initial_data):
         # Set defaults for optional fields
         self.ability_bonuses = []
-        self.ability_bonus_options = []
+        self.ability_bonus_options = None
         self.proficiencies = []
-        self.starting_proficiency_options = []
+        self.starting_proficiency_options = None
         self.languages = []
-        self.language_options = []
+        self.language_options = None
         self.traits = []
         self.subraces = []
         
@@ -25,7 +25,7 @@ class Race:
                 elif key == "ability_bonus_options":
                     setattr(self, key, Choice(dictionary[key]))
                 elif key == "starting_proficiencies":
-                    setattr(self, key, [Proficiency(p) for p in dictionary[key]])
+                    setattr(self, key, [ReferenceItem(p) for p in dictionary[key]])
                 elif key == "ability_bonus_options":
                     setattr(self, key, Choice(dictionary[key]))
                 elif key == "starting_proficiency_options":
@@ -45,20 +45,32 @@ class Race:
         return self.name
 
     def to_model(self):
+        language_options = None
+        if self.language_options:
+            language_options = self.language_options.to_model()
+        
+        starting_proficiency_options = None
+        if self.starting_proficiency_options:
+            starting_proficiency_options = self.starting_proficiency_options.to_model()
+
+        ability_bonus_options = None
+        if self.ability_bonus_options:
+            ability_bonus_options = self.ability_bonus_options.to_model()
+
         return racelib.Race(
             key=self.index,
             name=self.name,
             ability_bonuses=[a.to_model() for a in self.ability_bonuses],
-            ability_bonus_options=[c.to_model() for c in self.ability_bonus_options],
+            ability_bonus_options=ability_bonus_options,
             age=self.age,
             alignment=self.alignment,
             size=self.size,
             speed=self.speed,
             size_description=self.size_description,
             starting_proficiencies=[p.to_model() for p in self.starting_proficiencies],
-            starting_proficiency_options=[c.to_model() for c in self.starting_proficiency_options],
+            starting_proficiency_options=starting_proficiency_options,
             languages=[l.to_model() for l in self.languages],
-            language_options = [c.to_model() for c in self.language_options],
+            language_options = language_options,
             language_desc=self.language_desc,
             traits=[t.to_model() for t in self.traits], # returns reference item for now
             subraces=[r.to_model() for r in self.subraces]

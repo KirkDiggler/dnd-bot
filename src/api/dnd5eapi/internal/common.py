@@ -1,5 +1,6 @@
 from enum import Enum
-from src.api.lib import choice, referencelib
+from src.api.lib import choicelib
+from src.api.lib import referencelib
 
 class ReferenceType(Enum):
     EQUIPMENT = "equipment"
@@ -61,13 +62,13 @@ class Choice:
         return self.choose_from.select(reference_index)
 
     def to_model(self):
-        choice = choice.Choice(
+        choice = choicelib.Choice(
             choose=self.choose,
 
         )
 
 def _choice_from_to_model(input):
-    return choice.Choice(
+    return choicelib.Choice(
         choose=input.choose,
         _option_list=input.choose_from.to_model(),
     )
@@ -93,12 +94,12 @@ class Option:
 
     def to_model(self):
         if self.option_type == "choice":
-            return choice.Choice(
+            return choicelib.Choice(
                 option_type=self.option_type,
                 option=_choice_from_to_model(self.option),
             )
         
-        return choice.ReferenceOption(
+        return choicelib.ReferenceOption(
             option_type=self.option_type,
             option=self.option.item.to_model(self),
         )
@@ -196,7 +197,7 @@ class OptionsArrayOptionSet:
                     return selected
 
     def to_model(self):
-        return choice.OptionList(
+        return choicelib.OptionList(
             select_from=[o.to_model() for o in self.options],
         )
     

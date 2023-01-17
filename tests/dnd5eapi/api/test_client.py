@@ -3,12 +3,12 @@ import requests_mock
 from unittest import TestCase
 
 from src.api.dnd5eapi.client import Client
-from src.models.reference import ReferenceType
-from src.models.choice import OptionType
-from src.models.weapon import WeaponCategory
-from src.models.equipment import EquipmentCategory
-from src.models.proficiency import ProficiencyType
-from src.models.cost import CostUnit
+from src.api.lib.referencelib import ReferenceType
+from src.api.lib.choice import OptionType
+from src.api.lib.weapon import WeaponCategory
+from src.api.lib.equipmentlib import EquipmentCategory
+from src.api.lib.proficiencylib import ProficiencyType
+from src.api.lib.cost import CostUnit
 class TestClient(TestCase):
     def setUp(self):
         super(TestClient, self).setUp()

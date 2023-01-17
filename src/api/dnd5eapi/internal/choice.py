@@ -1,4 +1,5 @@
-from src.api.lib import choice, referencelib
+from src.api.lib import choicelib
+from src.api.lib import referencelib
 from .common import ReferenceType, ReferenceItem
 
 class Choice:
@@ -15,12 +16,12 @@ class Choice:
 
     def to_model(self):
         if self.from_['option_set_type'] == 'options_array':
-            return choice.Choice(
+            return choicelib.Choice(
                 choose=self.choose,
                 option_list=OptionSet(self.from_['options']).to_model(),
             )
         else:
-            raise Exception("option_set_type Not implemented")
+            raise Exception(f"{self.from_['option_set_type']} Not implemented")
 
 def _reference_type_to_model(input):
     if input == ReferenceType.PROFICIENCY:
@@ -54,7 +55,7 @@ class OptionSet:
 
 
     def to_model(self):
-        return choice.OptionList(
+        return choicelib.OptionList(
             select_from=[Option(option).to_model() for option in self.options],
         )
 
@@ -66,9 +67,21 @@ class ReferenceOption:
         return f"{self.__dict__}"
 
     def to_model(self):
-        return choice.ReferenceOption(
+        return choicelib.ReferenceOption(
             # TODO: get the type from url and convert to modle ReferenceType
             item=self.item.to_model(),
+        )
+
+class MultipleReferenceOptions:
+    def __init__(self, *initial_data):
+        self.items = [Option(item) for item in initial_data[0]]
+
+    def __str__(self):
+        return f"{self.__dict__}"
+
+    def to_model(self):
+        return choicelib.MultipleReferenceOptions(
+            items=[item.to_model() for item in self.items],
         )
 
 class Option:
@@ -83,6 +96,8 @@ class Option:
                         setattr(self, 'option', ReferenceOption(dictionary['item']))
                     elif dictionary[key] == 'counted_reference':
                         setattr(self, 'option', ReferenceOption(dictionary['of']))
+                    elif dictionary[key] == 'multiple':
+                        setattr(self, 'option', MultipleReferenceOptions(dictionary['items']))
 
     def __str__(self):
         return f"{self.__dict__}"
