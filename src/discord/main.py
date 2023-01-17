@@ -66,7 +66,10 @@ class DiscordBot(commands.Bot):
                 await message.channel.send(random.choice(responses))
             elif message.content.startswith('Thanks Ronnie'):
                 await message.channel.send(random.choice(responses))
-
+            elif message.content.startswith('Thanks ronnie'):
+                await message.channel.send(random.choice(responses))
+            elif message.content.startswith('tanks ronnie'):
+                await message.channel.send('get a load of this guy')
             await self.process_commands(message)
 
     def _commands(self):
@@ -172,7 +175,6 @@ class DiscordBot(commands.Bot):
             char_votes = UserPoll(votes_per_user=1)
             while True:
                 try:
-                    print('reaction_add')
                     reaction, user = await self.wait_for('reaction_add', timeout=5.0)
                 except asyncio.TimeoutError:
                     winners = char_votes.get_winners()
@@ -183,10 +185,11 @@ class DiscordBot(commands.Bot):
                     selected = choices[emoji_index[winners[0]]]
                     break
                 else:
-                    print("voting")
                     if char_votes.vote(user, reaction.emoji) == False:
-                        await msg.remove_reaction(char_votes.pop_vote(user), user)
-                
+                        removeEmoji = char_votes.pop_vote(user)
+                        print(f"User {user} removed vote for {removeEmoji}")
+                        await msg.remove_reaction(removeEmoji, user)
+                        char_votes.vote(user, reaction.emoji)
                 try:
                     reaction, user = await self.wait_for('reaction_remove', timeout=5.0, check=check)
                 except:

@@ -7,6 +7,7 @@ class UserPoll:
         self._votes = {}
 
     def vote(self, user, vote):
+        print(f"UserPoll: User {user.id} voted for {vote} userVotes: {self._user_votes}.")
         if user.id not in self._user_votes:
             self._user_votes[user.id] = [vote]
         else:
