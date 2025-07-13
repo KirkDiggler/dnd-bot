@@ -46,6 +46,75 @@ Each package must have:
 3. Its own test suite with coverage goals
 4. No circular dependencies
 
+#### Layered Architecture
+We are a **data-powered API**, the API version of rpg-toolkit. Our architecture enforces strict layering:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   gRPC Layer                        │
+│  - Proto definitions (external contract)            │
+│  - Proto ↔ Domain conversion                        │
+│  - gRPC error mapping                               │
+├─────────────────────────────────────────────────────┤
+│                 Service Layer                       │
+│  - Business logic orchestration                     │
+│  - Transaction boundaries                           │
+│  - Domain model operations                          │
+├─────────────────────────────────────────────────────┤
+│                Repository Layer                     │
+│  - Storage interfaces                               │
+│  - Domain ↔ Data model conversion                   │
+│  - Query logic                                      │
+├─────────────────────────────────────────────────────┤
+│              Storage Adapters                       │
+│  - Redis, DynamoDB, PostgreSQL, etc.               │
+│  - User's choice of implementation                  │
+└─────────────────────────────────────────────────────┘
+```
+
+**Layer Principles:**
+1. **Protos are External**: Proto definitions can evolve independently of internal models
+2. **Domain Models are Internal**: Service layer uses rich domain models, not protos
+3. **No Context Mixing**: Each layer only knows about the layer directly below it
+4. **Interface Boundaries**: Every layer interaction happens through interfaces
+5. **Mockable by Design**: Each layer generates its own mocks for testing
+
+**Example Layer Separation:**
+```go
+// Proto (external contract)
+message CreateSessionRequest {
+    string name = 1;
+    string dm_id = 2;
+}
+
+// Domain (internal model)
+type Session struct {
+    ID        string
+    Name      string
+    DM        *Player
+    Players   []*Player
+    State     SessionState
+    CreatedAt time.Time
+}
+
+// Service (orchestration)
+type SessionService interface {
+    CreateSession(ctx context.Context, input CreateSessionInput) (*Session, error)
+}
+
+// Repository (storage)
+type SessionRepository interface {
+    Save(ctx context.Context, session *Session) error
+    FindByID(ctx context.Context, id string) (*Session, error)
+}
+```
+
+**Conversion Pattern:**
+- gRPC handlers convert proto → domain
+- Services operate on domain models
+- Repositories convert domain → storage models
+- Each conversion is explicit and testable
+
 ### 3. Development Standards
 
 #### Documentation Requirements
@@ -61,6 +130,59 @@ Each package must have:
 - **No magic strings**: All constants defined and typed
 - **Error handling**: Wrapped errors with context
 - **Logging**: Structured logging with correlation IDs
+
+#### Conversion Patterns
+**Proto to Domain:**
+```go
+// in grpc handler
+func (s *grpcServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.Session, error) {
+    // Convert proto to domain input
+    input := CreateSessionInput{
+        Name: req.Name,
+        DMID: req.DmId,
+    }
+    
+    // Call service with domain types
+    session, err := s.service.CreateSession(ctx, input)
+    if err != nil {
+        return nil, toGRPCError(err)
+    }
+    
+    // Convert domain to proto response
+    return &pb.Session{
+        Id:        session.ID,
+        Name:      session.Name,
+        DmId:      session.DM.ID,
+        State:     pb.SessionState(session.State),
+        CreatedAt: timestamppb.New(session.CreatedAt),
+    }, nil
+}
+```
+
+**Domain to Storage:**
+```go
+// in repository implementation
+func (r *redisSessionRepository) Save(ctx context.Context, session *Session) error {
+    // Convert domain to storage model
+    data := sessionData{
+        ID:        session.ID,
+        Name:      session.Name,
+        DMID:      session.DM.ID,
+        PlayerIDs: extractPlayerIDs(session.Players),
+        State:     string(session.State),
+        CreatedAt: session.CreatedAt.Unix(),
+    }
+    
+    // Store using adapter-specific logic
+    return r.client.Set(ctx, "session:"+session.ID, data, 0).Err()
+}
+```
+
+**Benefits of This Pattern:**
+- API can evolve without breaking internal models
+- Storage can change without affecting business logic
+- Each layer is independently testable
+- Clear separation of concerns
 
 #### Testing Philosophy
 - **Integration over unit tests** where possible
@@ -89,17 +211,38 @@ Each package must have:
 
 ```
 dnd-bot/
-├── api/proto/          # API contracts
+├── api/proto/v1/       # API contracts (external, versioned)
+│   ├── session.proto   # Session management
+│   ├── dice.proto      # Dice rolling service
+│   └── common.proto    # Shared types
 ├── internal/           # Private application code
+│   ├── domain/         # Domain models and interfaces
+│   │   ├── session/    # Session aggregate
+│   │   └── player/     # Player aggregate
 │   ├── services/       # Business logic orchestration
-│   ├── grpc/          # gRPC implementations
-│   ├── storage/       # Persistence layer
-│   └── engine/        # rpg-toolkit integration
-├── pkg/               # Public packages (if any)
-├── web/               # React companion app
-├── cmd/               # Application entrypoints
-└── docs/              # ADRs, journey docs
+│   │   ├── session/    # Session service
+│   │   └── game/       # Game orchestration
+│   ├── grpc/           # gRPC layer
+│   │   ├── handlers/   # gRPC service implementations
+│   │   └── converters/ # Proto ↔ Domain converters
+│   ├── repositories/   # Repository implementations
+│   │   ├── redis/      # Redis adapters
+│   │   └── memory/     # In-memory for testing
+│   ├── storage/        # Storage interfaces
+│   └── engine/         # rpg-toolkit integration
+├── pkg/                # Public packages (if any)
+├── web/                # React companion app
+├── cmd/server/         # Application entrypoint
+└── docs/               # ADRs, journey docs
 ```
+
+**Package Responsibilities:**
+- `api/proto`: External API contract, can evolve independently
+- `internal/domain`: Core business entities, pure Go structs
+- `internal/services`: Business logic, uses domain models
+- `internal/grpc`: API layer, converts between proto and domain
+- `internal/repositories`: Storage implementations, pluggable
+- `internal/engine`: Integrates rpg-toolkit for game mechanics
 
 ### 6. Operational Standards
 
@@ -123,12 +266,19 @@ dnd-bot/
 - rpg-toolkit integration provides proven game mechanics
 - Documentation standards ensure knowledge preservation
 - Test standards ensure reliability and refactoring confidence
+- Layered architecture enables independent evolution of API, business logic, and storage
+- Repository pattern allows users to choose their preferred storage backend
+- Interface-driven design makes the system highly testable and modular
+- Proto/domain separation protects internal models from external API changes
 
 ### Negative
 - More upfront design work than a monolithic approach
 - API versioning complexity as system evolves
 - Integration testing requires more setup
 - Documentation requirements add development overhead
+- Conversion code between layers adds boilerplate
+- Multiple models (proto, domain, storage) for same concept
+- Learning curve for developers new to layered architecture
 
 ### Risks and Mitigations
 - **Risk**: Over-engineering for current needs
