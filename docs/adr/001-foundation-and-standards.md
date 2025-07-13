@@ -64,7 +64,7 @@ Each package must have:
 
 #### Testing Philosophy
 - **Integration over unit tests** where possible
-- **Real dependencies** when safe (Redis, Postgres in tests)
+- **Real dependencies** when safe (Redis in tests)
 - **Mock external services** (Discord API, third-party APIs)
 - **Table-driven tests** for comprehensive coverage
 - **Testify suite** for test organization
@@ -75,7 +75,7 @@ Each package must have:
 - **Language**: Go (consistency with rpg-toolkit)
 - **API**: gRPC with protobuf
 - **Real-time**: gRPC streaming + Redis pub/sub
-- **Storage**: PostgreSQL (game state) + Redis (cache/real-time)
+- **Storage**: Repository pattern with adapters (Redis for initial implementation)
 - **Web Framework**: None - gRPC-gateway handles HTTP
 
 #### Dependencies
@@ -83,7 +83,7 @@ Each package must have:
 - **grpc-go**: Google's gRPC implementation
 - **testify**: Test framework
 - **mockery**: Mock generation
-- **golang-migrate**: Database migrations
+- **Storage adapters**: Pluggable based on deployment needs
 
 ### 5. Project Organization
 

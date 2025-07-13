@@ -34,9 +34,9 @@ dnd-bot serves as the orchestration layer between game engines and user interfac
 ### Prerequisites
 
 - Go 1.21+
-- PostgreSQL 15+
-- Redis 7+
+- Redis 7+ (initial storage implementation)
 - protoc 3.x with Go plugins
+- Storage backend of your choice (via repository adapters)
 
 ### Development Setup
 
